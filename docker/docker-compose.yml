@@ -1,0 +1,69 @@
+version: '3'
+services:
+  elasticsearch_5:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
+    container_name: elasticsearch
+    environment:
+      - cluster.name=omms
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+    volumes:
+      - localesdata:/usr/share/elasticsearch/data
+    ports:
+      - 9205:9200
+    networks:
+      localesnet:
+        aliases:
+          - elasticsearch.local
+  kibana_5:
+    image: docker.elastic.co/kibana/kibana:7.7.0
+    container_name: kibana
+    environment:
+      SERVER_NAME: kibana
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - 5605:5601
+    depends_on:
+      - elasticsearch_5
+    networks:
+      localesnet:
+        aliases:
+          - kibana.local
+  logstash_5:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3005:3000
+    volumes:
+      - localgrafana_data:/var/lib/grafana
+    depends_on:
+      - elasticsearch_5
+    networks:
+      localesnet:
+        aliases:
+          - grafana.local
+  mysql_5:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: synd1337
+    ports:
+      - 3305:3306
+    volumes:
+      - localmysql_data:/var/lib/mysql
+    networks:
+      localesnet:
+        aliases:
+          - mysql.local
+volumes:
+  localesdata:
+    driver: local
+  localgrafana_data:
+    driver: local
+  localmysql_data:
+    driver: local
+
+networks:
+  localesnet:
