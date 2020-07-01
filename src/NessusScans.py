@@ -201,15 +201,25 @@ class NessusScans:
                     for o in pid['outputs']:
                         print(o['ports'])
 
+    def get_folder_info(self, folders, scan_id):
+        scan_info = self.get_scan_detail(scan_id)
+        folder_id = scan_info['info']['folder_id']
+        for folder in folders:
+            if folder['id'] == folder_id:
+                return folder
+
     def monitor_scans(self):
+        folders = self.get_folders()
         scan_ids = []
         while True:
             scanner = self.get_scanner_status()
             if scanner['scans']:
                 for scan in scanner['scans']:
+                    folder = self.get_folder_info(folders, scan['scan_id'])
                     if scan['scan_id'] not in scan_ids:
-                        self.notify('{} on {} started at {}'.format(
+                        self.notify('{} for {} on {} started at {}'.format(
                             scan['name'],
+                            folder['name'],
                             self.api_url,
                             datetime.fromtimestamp(int(scan['start_time']))))
                     if (scan['scan_id']) not in scan_ids:
@@ -218,8 +228,10 @@ class NessusScans:
             for scan in temp_scanids:
                 scan_detail = self.get_scan_detail(scan)
                 if scan_detail['info']['status'] != 'running':
-                    self.notify('{} on {} ended at {}'.format(
+                    folder = self.get_folder_info(folders, scan)
+                    self.notify('{} for {} on {} ended at {}'.format(
                         scan_detail['info']['name'],
+                        folder,
                         self.api_url,
                         datetime.fromtimestamp(int(scan_detail['info']['scan_end']))))
                     scan_ids.remove(scan)
